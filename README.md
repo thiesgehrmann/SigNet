@@ -1,6 +1,8 @@
 # SigNet
 A unified testing and selection method to discover statistically significantly mutated sub-networks
 
+![The SigNet processing and analysis steps](method.png)
+
 ### Usage
 
 The pipeline.sh file contains the four parts of this tool that need to be executed in that order.
