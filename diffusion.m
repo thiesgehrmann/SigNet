@@ -1,10 +1,10 @@
 
 % Some taken from Sepideh
 
+beta = beta %Parameter should be given!!!
+
 N_file = 'analysis/diffusion_input_network_sparse.tsv';
 S_file = 'analysis/diffusion_input_scores.tsv';
-
-BETA = linspace(0, 0.03, 10)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -24,59 +24,52 @@ disp('Done reading data');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-A=diag(sum(WGGs));
-L=WGGs-A;
+A = WGGs;
 
+D = sum(A)';
+Laplacian = diag(D) - A;
 disp('Computing eigenvalues');
 tic
-[T,D] = eig(L, 'nobalance');
+[T, DIAG] = eig(-Laplacian);
 toc
+DIAG = diag(DIAG);
 
-save('analysis/eig.mat', 'T', 'D')
 
 disp('Computing inverse');
 tic
-invT  = inv(T);
-save('analysis/inv.mat', 'invT')
+Tinv = inv(T);
 toc
 
-for beta = BETA
+disp(sprintf('Performing diffusion for beta=%f', beta));
 
-  beta = 0;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  disp(sprintf('Performing diffusion for beta=%f', beta));
+tic
+  temp1                = beta*DIAG;
+  temp1(temp1<(-2^10)) = -2^10;
+  K                    = T*diag(exp(temp1))*Tinv;
+  K(K< 0)              = 0;
+  %% Diffusion Score
+  SD                   = S*K;
+  SD                   = SD'
+toc;
 
-  tic
-    temp1                = beta*diag(D);
-    temp1(temp1<(-2^10)) = -2^10;
-    K                    = T*diag(exp(temp1))*invT;
-    K(K< 0)              = 0;
-    %% Diffusion Score
-    SD                   = S*K;
-  toc;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Save
+outf_network = sprintf('analysis/diffusion_output_network.%0.5f.tsv', beta);
+outf_scores  = sprintf('analysis/diffusion_output_scores.%0.5f.tsv', beta);
+outf_mat     = sprintf('analysis/diffusion_output_network_and_scores.%0.5f.mat', beta);
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Save
-  outf_network = sprintf('analysis/diffusion_output_network.%0.5f.tsv', beta);
-  outf_scores  = sprintf('analysis/diffusion_output_scores.%0.5f.tsv', beta);
-  outf_mat = sprintf('analysis/diffusion_output_network_and_scores.%0.5f.mat', beta);
+save(outf_mat, 'K', 'SD', '-v7.3')
 
-  save(outf_mat, 'K', 'SD')
+save(outf_scores, 'SD', '-ascii');
 
-  %save(outf_scores, 'SD', '-ascii');
+[i,j,val]           = find(K);
+[i,j,val] = find(WGGs);
+network_sparse_dump = [i,j,val];
 
-  %[i,j,val]           = find(K);
-  %[i,j,val] = find(WGGs);
-  %network_sparse_dump = [i,j,val];
-
-  %fd = fopen(outf_network,'w')
-  %fprintf( fd,'%d\t%d\t%0.5f\n', network_sparse_dump' );
-  %fprintf( fd,'%d\t%d\t%0.5f', nGenes, nGenes, 0);
-  %fclose(fd);
-
-end
-
-
-
-
+fd = fopen(outf_network,'w')
+fprintf( fd,'%d\t%d\t%0.5f\n', network_sparse_dump' );
+fprintf( fd,'%d\t%d\t%0.5f', nGenes, nGenes, 0);
+fclose(fd);
 
