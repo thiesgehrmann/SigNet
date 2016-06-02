@@ -32,9 +32,12 @@ tic
 [T,D] = eig(L, 'nobalance');
 toc
 
+save('analysis/eig.mat', 'T', 'D')
+
 disp('Computing inverse');
 tic
 invT  = inv(T);
+save('analysis/inv.mat', 'invT')
 toc
 
 for beta = BETA
@@ -56,17 +59,20 @@ for beta = BETA
     % Save
   outf_network = sprintf('analysis/diffusion_output_network.%0.5f.tsv', beta);
   outf_scores  = sprintf('analysis/diffusion_output_scores.%0.5f.tsv', beta);
+  outf_mat = sprintf('analysis/diffusion_output_network_and_scores.%0.5f.mat', beta);
 
-  save(outf_scores, 'SD', '-ascii');
+  save(outf_mat, 'K', 'SD')
 
-  [i,j,val]           = find(K);
-  [i,j,val] = find(WGGs);
-  network_sparse_dump = [i,j,val];
+  %save(outf_scores, 'SD', '-ascii');
 
-  fd = fopen(outf_network,'w')
-  fprintf( fd,'%d\t%d\t%0.5f\n', network_sparse_dump' );
-  fprintf( fd,'%d\t%d\t%0.5f', nGenes, nGenes, 0);
-  fclose(fd);
+  %[i,j,val]           = find(K);
+  %[i,j,val] = find(WGGs);
+  %network_sparse_dump = [i,j,val];
+
+  %fd = fopen(outf_network,'w')
+  %fprintf( fd,'%d\t%d\t%0.5f\n', network_sparse_dump' );
+  %fprintf( fd,'%d\t%d\t%0.5f', nGenes, nGenes, 0);
+  %fclose(fd);
 
 end
 
