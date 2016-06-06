@@ -5,7 +5,6 @@ from bx.intervals.intersection import IntervalTree
 from scipy import stats as sst
 import os;
 import numpy as np;
-import DTcut as dtcut
 
 import python_utils as utils;
 import matplotlib.pylab as plt;
@@ -137,7 +136,7 @@ string_trunc = string[_.combined_score > string_thresh].Copy();
 
   # First, let's select only the genes that are actually in our network
   # (Some mutated genes may not be here)
-genes_in_network = ((string_trunc.protein1 | Stack | string_trunc.protein2).Unique() / ('protein',)) | Match(_.protein, _.string_protein_id, jointype='left', merge_same='equi')  | P_score.Get(_.string_protein_id, _.score)
+genes_in_network = ((string_trunc.protein1 | Stack | string_trunc.protein2).Unique() / ('protein',)) | Match(_.protein, _.string_protein_id, jointype='left', merge_same='equi')  | P_score
 genes_in_network = genes_in_network.ReplaceMissing().Copy();
 
   # Create an index of all the genes in the network
@@ -171,3 +170,25 @@ plt.ylabel("Frequency");
 #g.axes.set_yscale('log')
 plt.savefig("analysis/figures/gene_mutation_score_histogram.svg");
 
+###############################################################################
+
+  # Prepare the clustering network
+string_full = (string_trunc | Stack | string_trunc.Get(1,0,2)) / ('protein1', 'protein2', 'score');
+string_full = string_full.To(_.protein1, Do=_.TakeFrom(gene_dict)).To(_.protein2, Do=_.TakeFrom(gene_dict)).Copy();
+string_full = string_full / ('protein1', 'protein2', 'score');
+neighbors   = dict([ (p1, set(N+[p1])) for (p1, N) in zip(*string_full.GroupBy(_.protein1).Without(_.score)())]);
+
+JACC = np.zeros((len(gene_dict), len(gene_dict)))
+
+n = len(gene_dict)
+for i in xrange(0, n-1):
+  for j in xrange(i+1, n):
+    n_i  = neighbors[i];
+    n_j  = neighbors[j];
+    n_ij = n_i | n_j;
+    JACC[i,j] = float(len(n_i & n_j)) / float(len(n_ij));
+    JACC[j,i] = JACC[j,i];
+  #efor
+#efor
+
+utils.save_network_tsv(JACC, 'analysis/jaccard_network.tsv')

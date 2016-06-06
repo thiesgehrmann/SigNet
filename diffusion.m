@@ -60,16 +60,17 @@ outf_network = sprintf('analysis/diffusion_output_network.%0.5f.tsv', beta);
 outf_scores  = sprintf('analysis/diffusion_output_scores.%0.5f.tsv', beta);
 outf_mat     = sprintf('analysis/diffusion_output_network_and_scores.%0.5f.mat', beta);
 
-save(outf_mat, 'K', 'SD', '-v7.3')
+fd = fopen(outf_scores, 'w');
+fprintf(fd, '%0.7f\n', SD);
+fclose(fd);
+disp('done writing scores');
 
-save(outf_scores, 'SD', '-ascii');
-
-[i,j,val]           = find(K);
-[i,j,val] = find(WGGs);
+[i,j,val]           = find(K > 10^-10);
 network_sparse_dump = [i,j,val];
 
 fd = fopen(outf_network,'w')
-fprintf( fd,'%d\t%d\t%0.5f\n', network_sparse_dump' );
-fprintf( fd,'%d\t%d\t%0.5f', nGenes, nGenes, 0);
+fprintf( fd,'%d\t%d\t%0.7f\n', network_sparse_dump' );
+fprintf( fd,'%d\t%d\t%0.7f', nGenes, nGenes, K(nGenes, nGenes));
 fclose(fd);
+disp('done writing network')
 
